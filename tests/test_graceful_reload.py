@@ -392,6 +392,19 @@ class TestSQLiteCache(unittest.TestCase):
         all_pkgs = self.sql.query(SQLPackage).all()
         self.assertItemsEqual(all_pkgs, pkgs)
 
+    def test_add_same_name_version(self):
+        """ If package has same name and version but different py version, reload cache gracefully """
+        pkgs = [
+            self._make_package(last_modified=datetime.utcnow() - timedelta(hours=1)),
+            self._make_package(filename="mypkg-1.5-py2-none-any.whl", version="1.5"),
+            self._make_package(filename="mypkg-1.5-py3-none-any.whl", version="1.5"),
+        ]
+        self.db.save(pkgs[0])
+        self.storage.list.return_value = pkgs
+        self.db.reload_from_storage()
+        all_pkgs = self.sql.query(SQLPackage).all()
+        self.assertItemsEqual(all_pkgs, pkgs)
+
 
 class TestMySQLCache(TestSQLiteCache):
     """ Test the SQLAlchemy cache on a MySQL DB """
